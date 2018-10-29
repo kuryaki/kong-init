@@ -279,6 +279,8 @@ impl<'t> KongApiClient<'t> {
         }
     }
 
+    /*********** consumers ****************/
+
     pub fn init_guest_consumer(&self, custom_id: &str) -> String {
         let payload = json!({
             "custom_id": custom_id,
@@ -328,6 +330,33 @@ impl<'t> KongApiClient<'t> {
             }
         };
     }
+
+    /*********** plugins end ****************/
+
+    /*********** credentials ****************/
+
+    pub fn add_credential(&self, consumer_id: &str, plugin: &str, payload: &BTreeMap<String, String>) {
+        let mut json_payload = HashMap::new();
+
+        for (k, v) in payload.iter() {
+            json_payload.insert(format!("{}", k), v.to_string());
+        }
+
+        match self.client.post(&format!("{}/consumers/{}/{}", self.base_url, consumer_id.to_string(), plugin.to_string()))
+            .json(&json_payload)
+            .send() {
+            Err(why) => error!("credentials: {}", why),
+            Ok(resp) => {
+                if resp.status() == StatusCode::CREATED || resp.status() == StatusCode::CONFLICT {
+                    info!("succeed creating credential {} to consumer {}", plugin.to_string(), consumer_id.to_string())
+                } else {
+                    error!("_credentials: {}", resp.status())
+                }
+            }
+        }
+    }
+
+    /*********** credentials end ****************/
 
     fn _apply_plugin_to_one(&self, plugin_type: &str, plugin_conf: &BTreeMap<String, String>, api_name: &str) {
         let mut json_payload = HashMap::new();
