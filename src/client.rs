@@ -335,22 +335,25 @@ impl<'t> KongApiClient<'t> {
 
     /*********** credentials ****************/
 
-    pub fn add_credential(&self, consumer_id: &str, plugin: &str, payload: &BTreeMap<String, String>) {
+    pub fn add_credential(&self, consumer_id: &str, plugin_name: &str, payload: &BTreeMap<String, String>) {
         let mut json_payload = HashMap::new();
+        let consumer = consumer_id.to_string();
+        let plugin = plugin_name.to_string();
 
         for (k, v) in payload.iter() {
             json_payload.insert(format!("{}", k), v.to_string());
         }
 
-        match self.client.post(&format!("{}/consumers/{}/{}", self.base_url, consumer_id.to_string(), plugin.to_string()))
+        match self.client.post(&format!("{}/consumers/{}/{}", self.base_url, consumer, plugin))
             .json(&json_payload)
             .send() {
             Err(why) => error!("credentials: {}", why),
             Ok(resp) => {
                 if resp.status() == StatusCode::CREATED || resp.status() == StatusCode::CONFLICT {
-                    info!("succeed creating credential {} to consumer {}", plugin.to_string(), consumer_id.to_string())
+                    info!("succeed creating credential {} to consumer {}", plugin, consumer);
                 } else {
-                    error!("_credentials: {}", resp.status())
+                    // TODO add body msg
+                    error!("_credentials: {} using {}/{}", resp.status(), consumer, plugin);
                 }
             }
         }
